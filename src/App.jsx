@@ -225,14 +225,31 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
   const selF = flavors.find(f => f.id === gout);
   const cmdPrice = 10 + (livraison ? 5 : 0);
 
+  const [snapCopied, setSnapCopied] = useState(false);
+  const didLongPress = useRef(false);
+
   const handleAddressClick = () => {
+    if (didLongPress.current) { didLongPress.current = false; return; }
     if (!client.adresse) return;
     navigator.clipboard?.writeText(client.adresse);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  const addrPressStart = () => { pressTimer.current = setTimeout(() => { if (client.adresse) window.open(`https://waze.com/ul?q=${encodeURIComponent(client.adresse)}`, "_blank"); }, 600); };
+  const addrPressStart = () => {
+    didLongPress.current = false;
+    pressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      if (client.adresse) window.open(`https://waze.com/ul?q=${encodeURIComponent(client.adresse)}`, "_blank");
+    }, 600);
+  };
   const addrPressEnd = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
+
+  const copySnap = () => {
+    if (!client.snap) return;
+    navigator.clipboard?.writeText(client.snap);
+    setSnapCopied(true);
+    setTimeout(() => setSnapCopied(false), 2000);
+  };
 
   const submitCmd = () => { onAddCommande(client.id, { gout, quantite: qty, date, livraison }); setShowCmd(false); setQty(1); setLivraison(false); };
   const submitParr = () => { if (!parrId) return; onAddParrainage(client.id, parseInt(parrId)); setShowParr(false); setParrId(""); };
@@ -248,19 +265,28 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
         <button onClick={() => setShowDeleteModal(true)} className="text-sm font-medium px-3 py-1.5 rounded-full" style={{ color: "#FF3B30", background: "#FFF1F0" }}>Supprimer</button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm p-5">
+      <div className="bg-white rounded-2xl shadow-sm p-5" style={{ WebkitUserSelect: "none", userSelect: "none" }}>
         <div className="flex gap-4 items-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl flex-shrink-0" style={{ background: "linear-gradient(135deg, #007AFF, #34C759)" }}>{client.prenom.charAt(0)}</div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-xl leading-tight" style={{ color: "#1C1C1E" }}>{client.prenom}</div>
-            {client.snap && <div className="text-sm mt-0.5" style={{ color: "#FFCC00" }}>👻 {client.snap}</div>}
+            {client.snap && (
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-sm" style={{ color: "#FFCC00" }}>👻 {client.snap}</span>
+                <button onClick={copySnap} className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: snapCopied ? "#34C75920" : "#F2F2F7", color: snapCopied ? "#34C759" : "#8E8E93" }}>
+                  {snapCopied ? "Copié ✓" : "Copier"}
+                </button>
+              </div>
+            )}
             {client.telephone && <div className="text-sm" style={{ color: "#8E8E93" }}>{client.telephone}</div>}
           </div>
         </div>
         {client.adresse && (
-          <button onMouseDown={addrPressStart} onMouseUp={addrPressEnd} onMouseLeave={addrPressEnd} onTouchStart={addrPressStart} onTouchEnd={addrPressEnd} onClick={handleAddressClick}
+          <button
+            onMouseDown={addrPressStart} onMouseUp={addrPressEnd} onMouseLeave={addrPressEnd}
+            onTouchStart={addrPressStart} onTouchEnd={addrPressEnd} onClick={handleAddressClick}
             className="mt-3 w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left"
-            style={{ background: copied ? "#F0FDF4" : "#F2F2F7" }}>
+            style={{ background: copied ? "#F0FDF4" : "#F2F2F7", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}>
             <span>📍</span>
             <span className="text-xs flex-1" style={{ color: copied ? "#34C759" : "#3C3C43" }}>{copied ? "Adresse copiée ✓" : client.adresse}</span>
             <span className="text-[10px]" style={{ color: "#C7C7CC" }}>Tap: copier · Hold: Waze</span>
@@ -777,10 +803,8 @@ function StatsPage({ clients, flavors }) {
           </div>
         </div>,
         (() => {
-          // Fidélisation : nb de commandes par client (nombre de commandes = nb de fois qu'il a commandé)
           const nbCmdByClient = clients.map(c => c.commandes.length);
           const maxCmds = Math.max(...nbCmdByClient, 1);
-          // Compter combien de clients ont 0 cmd, 1 cmd, 2 cmd, etc.
           const counts = {};
           for (let i = 0; i <= maxCmds; i++) counts[i] = 0;
           nbCmdByClient.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
@@ -788,6 +812,10 @@ function StatsPage({ clients, flavors }) {
           const maxCount = Math.max(...labels.map(l => counts[l]), 1);
           const fideles = clients.filter(c => c.commandes.length >= 2).length;
           const tauxFid = totalClients > 0 ? Math.round((fideles / totalClients) * 100) : 0;
+          const barW = 14;
+          const gap = Math.max(24, Math.min(44, Math.floor(280 / Math.max(labels.length, 1))));
+          const svgW = labels.length * gap;
+          const chartH = 80;
           return (
             <div className={P}>
               <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Fidélisation</div>
@@ -798,26 +826,30 @@ function StatsPage({ clients, flavors }) {
                 </div>
                 <div className="text-3xl font-bold" style={{ color: "#34C759" }}>{tauxFid}%</div>
               </div>
-              <div style={{ height: 130 }}>
-                <svg width="100%" height="130" viewBox={`0 0 ${Math.max(labels.length, 1) * 44} 130`} preserveAspectRatio="none">
+              <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+                <svg width={Math.max(svgW, 280)} height={chartH + 30} style={{ display: "block" }}>
                   {labels.map((l, i) => {
                     const count = counts[l] || 0;
-                    const h = Math.max((count / maxCount) * 100, count > 0 ? 8 : 0);
+                    const h = count === 0 ? 0 : Math.max((count / maxCount) * chartH, 8);
+                    const x = i * gap + gap / 2;
+                    const color = l === 0 ? "#C7C7CC" : l >= 2 ? "#34C759" : "#007AFF";
                     return (
                       <g key={l}>
-                        <rect x={i * 44 + 6} y={110 - h} width={32} height={h} rx="6"
-                          fill={l === 0 ? "#C7C7CC" : l >= 2 ? "#34C759" : "#007AFF"} opacity={0.8} />
-                        {count > 0 && <text x={i * 44 + 22} y={104 - h} textAnchor="middle" fontSize="10" fill="#8E8E93" fontWeight="600">{count}</text>}
-                        <text x={i * 44 + 22} y={125} textAnchor="middle" fontSize="9" fill="#C7C7CC">{l === 0 ? "0 cmd" : `${l} cmd`}</text>
+                        <rect x={x - barW / 2} y={chartH - h} width={barW} height={h} rx="4" fill={color} opacity={0.85} />
+                        {count > 0 && (
+                          <text x={x} y={chartH - h - 4} textAnchor="middle" fontSize="10" fill="#3C3C43" fontWeight="600">{count}</text>
+                        )}
+                        <text x={x} y={chartH + 14} textAnchor="middle" fontSize="9" fill="#C7C7CC">{l}</text>
                       </g>
                     );
                   })}
+                  <text x={0} y={chartH + 28} fontSize="8" fill="#C7C7CC">nb de commandes →</text>
                 </svg>
               </div>
               <div className="flex gap-3 flex-wrap">
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#C7C7CC" }}></span>0 commande</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#007AFF" }}></span>1 commande</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#34C759" }}></span>2+ commandes</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#C7C7CC" }}></span>0</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#007AFF" }}></span>1 commande</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#34C759" }}></span>2+ commandes</span>
               </div>
             </div>
           );
@@ -953,7 +985,7 @@ export default function App() {
   const ROW = "flex items-center gap-3 px-4 py-3.5 border-b last:border-0";
 
   return (
-    <div style={{ background: "#F2F2F7", minHeight: "100dvh", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
+    <div style={{ background: "#F2F2F7", minHeight: "100dvh", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif", WebkitUserSelect: "none", userSelect: "none", WebkitTouchCallout: "none" }}>
       {notif && (
         <div className="fixed left-4 right-4 z-50 px-4 py-3 rounded-2xl text-sm font-semibold text-center shadow-lg"
           style={{ top: "calc(env(safe-area-inset-top, 44px) + 8px)", background: notif.color === "red" ? "#FF3B30" : "#34C759", color: "white" }}>
