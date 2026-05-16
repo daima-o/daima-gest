@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 
+
 // ─── DEFAULT FLAVORS ──────────────────────────────────────────────────────────
 const DEFAULT_FLAVORS = [
   { id: "pomme",     label: "Pomme",     color: "#34C759", bg: "#F0FDF4", emoji: "🍎" },
@@ -919,7 +920,7 @@ const [selectedId, setSelectedId] = useState(null);
 const [notif, setNotif] = useState(null);
 const [deleteTarget, setDeleteTarget] = useState(null);
 const [newClient, setNewClient] = useState({ prenom: "", snap: "", telephone: "", adresse: "", parrainePar: "" });
-  const { useEffect } = import x from "react";
+  
 useEffect(() => { try { localStorage.setItem('dg_clients', JSON.stringify(clients)); } catch {} }, [clients]);
 useEffect(() => { try { localStorage.setItem('dg_stock', JSON.stringify(stock)); } catch {} }, [stock]);
 useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavors)); } catch {} }, [flavors]);
