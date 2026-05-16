@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 
-
 // ─── DEFAULT FLAVORS ──────────────────────────────────────────────────────────
 const DEFAULT_FLAVORS = [
   { id: "pomme",     label: "Pomme",     color: "#34C759", bg: "#F0FDF4", emoji: "🍎" },
@@ -12,6 +11,52 @@ const DEFAULT_FLAVORS = [
 ];
 const FLAVOR_COLORS = ["#34C759","#FF3B30","#FF9500","#FFCC00","#AF52DE","#FF6B35","#007AFF","#FF2D55","#5AC8FA","#4CD964"];
 const FLAVOR_EMOJIS = ["🍎","🍓","🥭","🍋","🫐","🍑","🍇","🍈","🍊","🍉","🍌","🍍","🥝","🍒","🫒"];
+
+// ─── INIT DATA ────────────────────────────────────────────────────────────────
+const initClients = [
+  {
+    id: 1, prenom: "Sophie", snap: "sophiem", telephone: "06 12 34 56 78", adresse: "12 rue de la Paix, Paris",
+    dateInscription: "2024-04-01",
+    commandes: [
+      { id: 1, date: "2024-04-03", gout: "pomme", quantite: 2, livraison: false },
+      { id: 2, date: "2024-04-10", gout: "fraise", quantite: 1, livraison: true },
+      { id: 3, date: "2024-04-22", gout: "pomme", quantite: 1, livraison: false },
+    ],
+    parrainageFait: [2, 3, 4, 5], parrainePar: null,
+    relance1: true, produit5Offert: false, relance2: false, produitGratuitOffert: false,
+  },
+  {
+    id: 2, prenom: "Thomas", snap: "tleroux", telephone: "07 23 45 67 89", adresse: "5 avenue Victor Hugo, Lyon",
+    dateInscription: "2024-04-05",
+    commandes: [
+      { id: 1, date: "2024-04-08", gout: "mangue", quantite: 1, livraison: false },
+      { id: 2, date: "2024-04-28", gout: "mangue", quantite: 2, livraison: true },
+    ],
+    parrainageFait: [5], parrainePar: 1,
+    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
+  },
+  {
+    id: 3, prenom: "Camille", snap: "camille_d", telephone: "06 34 56 78 90", adresse: "",
+    dateInscription: "2024-04-05",
+    commandes: [], parrainageFait: [], parrainePar: 1,
+    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
+  },
+  {
+    id: 4, prenom: "Julien", snap: "julienb07", telephone: "07 45 67 89 01", adresse: "8 boulevard Haussmann, Paris",
+    dateInscription: "2024-04-08",
+    commandes: [{ id: 1, date: "2024-04-15", gout: "citron", quantite: 2, livraison: false }],
+    parrainageFait: [], parrainePar: 1,
+    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
+  },
+  {
+    id: 5, prenom: "Marie", snap: "mariefont", telephone: "06 56 78 90 12", adresse: "",
+    dateInscription: "2024-04-08",
+    commandes: [{ id: 1, date: "2024-04-20", gout: "framboise", quantite: 1, livraison: true }],
+    parrainageFait: [], parrainePar: 2,
+    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
+  },
+];
+const initStock = Object.fromEntries(DEFAULT_FLAVORS.map(f => [f.id, 8]));
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function getWeekKey(dateStr) {
@@ -67,77 +112,19 @@ function fmtDate(str) {
 }
 function getParrainageStatus(client, clients) {
   const actifs = filleulsActifsCount(client, clients);
-  if (actifs >= 5 && client.produitGratuitOffert) return { level: "gratuit-done", color: "#8E8E93", label: "✓ Puff gratuit offert" };
+  if (actifs >= 5 && client.produitGratuitOffert) return { color: "#8E8E93", label: "✓ Puff gratuit offert" };
   if (actifs >= 5) return { level: "gratuit", color: "#34C759", label: "🎁 Puff gratuit à offrir !" };
-  if (actifs === 4 && client.relance2) return { level: "relance2-done", color: "#8E8E93", label: "✓ Relancé 4/5" };
+  if (actifs === 4 && client.relance2) return { color: "#8E8E93", label: "✓ Relancé 4/5" };
   if (actifs === 4) return { level: "relance2", color: "#FF9500", label: "⚡ À relancer — 4/5" };
-  if (actifs >= 3 && client.produit5Offert) return { level: "5eur-done", color: "#8E8E93", label: "✓ Puff 5€ offert" };
+  if (actifs >= 3 && client.produit5Offert) return { color: "#8E8E93", label: "✓ Puff 5€ offert" };
   if (actifs >= 3) return { level: "5eur", color: "#007AFF", label: "🏷 Puff à 5€ à offrir !" };
-  if (actifs === 2 && client.relance1) return { level: "relance1-done", color: "#8E8E93", label: "✓ Relancé 2/3" };
+  if (actifs === 2 && client.relance1) return { color: "#8E8E93", label: "✓ Relancé 2/3" };
   if (actifs === 2) return { level: "relance1", color: "#FF9500", label: "⚡ À relancer — 2/3" };
   return null;
 }
 function needsAction(client, clients) {
   const actifs = filleulsActifsCount(client, clients);
   return (actifs === 2 && !client.relance1) || (actifs === 4 && !client.relance2);
-}
-
-// ─── INIT DATA ────────────────────────────────────────────────────────────────
-const initClients = [
-  {
-    id: 1, prenom: "Sophie", snap: "sophiem", telephone: "06 12 34 56 78", adresse: "12 rue de la Paix, Paris",
-    dateInscription: "2024-04-01",
-    commandes: [
-      { id: 1, date: "2024-04-03", gout: "pomme", quantite: 2, livraison: false },
-      { id: 2, date: "2024-04-10", gout: "fraise", quantite: 1, livraison: true },
-      { id: 3, date: "2024-04-22", gout: "pomme", quantite: 1, livraison: false },
-    ],
-    parrainageFait: [2, 3, 4, 5], parrainePar: null,
-    relance1: true, produit5Offert: false, relance2: false, produitGratuitOffert: false,
-  },
-  {
-    id: 2, prenom: "Thomas", snap: "tleroux", telephone: "07 23 45 67 89", adresse: "5 avenue Victor Hugo, Lyon",
-    dateInscription: "2024-04-05",
-    commandes: [
-      { id: 1, date: "2024-04-08", gout: "mangue", quantite: 1, livraison: false },
-      { id: 2, date: "2024-04-28", gout: "mangue", quantite: 2, livraison: true },
-    ],
-    parrainageFait: [5], parrainePar: 1,
-    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
-  },
-  {
-    id: 3, prenom: "Camille", snap: "camille_d", telephone: "06 34 56 78 90", adresse: "",
-    dateInscription: "2024-04-05",
-    commandes: [], parrainageFait: [], parrainePar: 1,
-    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
-  },
-  {
-    id: 4, prenom: "Julien", snap: "julienb07", telephone: "07 45 67 89 01", adresse: "8 boulevard Haussmann, Paris",
-    dateInscription: "2024-04-08",
-    commandes: [{ id: 1, date: "2024-04-15", gout: "citron", quantite: 2, livraison: false }],
-    parrainageFait: [], parrainePar: 1,
-    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
-  },
-  {
-    id: 5, prenom: "Marie", snap: "mariefont", telephone: "06 56 78 90 12", adresse: "",
-    dateInscription: "2024-04-08",
-    commandes: [{ id: 1, date: "2024-04-20", gout: "framboise", quantite: 1, livraison: true }],
-    parrainageFait: [], parrainePar: 2,
-    relance1: false, produit5Offert: false, relance2: false, produitGratuitOffert: false,
-  },
-];
-const initStock = Object.fromEntries(DEFAULT_FLAVORS.map(f => [f.id, 8]));
-
-// ─── LONG PRESS HOOK ──────────────────────────────────────────────────────────
-function useLongPress(onLongPress, ms = 600) {
-  const timer = useRef(null);
-  const start = useCallback((e) => {
-    timer.current = setTimeout(() => onLongPress(e), ms);
-  }, [onLongPress, ms]);
-  const clear = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-  return { onMouseDown: start, onMouseUp: clear, onMouseLeave: clear, onTouchStart: start, onTouchEnd: clear };
 }
 
 // ─── CAROUSEL ─────────────────────────────────────────────────────────────────
@@ -183,7 +170,7 @@ function WeekSelector({ weeks, current, onChange }) {
   );
 }
 
-// ─── DELETE CLIENT MODAL ──────────────────────────────────────────────────────
+// ─── DELETE MODAL ─────────────────────────────────────────────────────────────
 function DeleteClientModal({ client, onConfirm, onCancel }) {
   const [keepHistory, setKeepHistory] = useState(false);
   return (
@@ -194,27 +181,18 @@ function DeleteClientModal({ client, onConfirm, onCancel }) {
           <div className="text-lg font-bold" style={{ color: "#1C1C1E" }}>Supprimer {client.prenom} ?</div>
           <div className="text-sm mt-1" style={{ color: "#8E8E93" }}>Cette action est irréversible.</div>
         </div>
-        <div className="rounded-2xl overflow-hidden" style={{ background: "#F2F2F7" }}>
-          <button onClick={() => setKeepHistory(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-3.5">
-            <div>
-              <div className="text-sm font-medium text-left" style={{ color: "#1C1C1E" }}>Garder l'historique des commandes</div>
-              <div className="text-xs text-left mt-0.5" style={{ color: "#8E8E93" }}>Le CA sera conservé dans les stats</div>
-            </div>
-            <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 flex-shrink-0"
-              style={keepHistory ? { background: "#007AFF", borderColor: "#007AFF" } : { borderColor: "#C7C7CC" }}>
-              {keepHistory && <span className="text-white text-xs font-bold">✓</span>}
-            </div>
-          </button>
-        </div>
-        <button onClick={() => onConfirm(keepHistory)}
-          className="w-full py-4 rounded-2xl text-sm font-semibold text-white" style={{ background: "#FF3B30" }}>
-          Supprimer
+        <button onClick={() => setKeepHistory(v => !v)} className="w-full rounded-2xl overflow-hidden flex items-center justify-between px-4 py-3.5" style={{ background: "#F2F2F7" }}>
+          <div>
+            <div className="text-sm font-medium text-left" style={{ color: "#1C1C1E" }}>Garder l'historique des commandes</div>
+            <div className="text-xs text-left mt-0.5" style={{ color: "#8E8E93" }}>Le CA sera conservé dans les stats</div>
+          </div>
+          <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center ml-3 flex-shrink-0"
+            style={keepHistory ? { background: "#007AFF", borderColor: "#007AFF" } : { borderColor: "#C7C7CC" }}>
+            {keepHistory && <span className="text-white text-xs font-bold">✓</span>}
+          </div>
         </button>
-        <button onClick={onCancel}
-          className="w-full py-4 rounded-2xl text-sm font-semibold" style={{ background: "#F2F2F7", color: "#007AFF" }}>
-          Annuler
-        </button>
+        <button onClick={() => onConfirm(keepHistory)} className="w-full py-4 rounded-2xl text-sm font-semibold text-white" style={{ background: "#FF3B30" }}>Supprimer</button>
+        <button onClick={onCancel} className="w-full py-4 rounded-2xl text-sm font-semibold" style={{ background: "#F2F2F7", color: "#007AFF" }}>Annuler</button>
       </div>
     </div>
   );
@@ -247,82 +225,49 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
   const selF = flavors.find(f => f.id === gout);
   const cmdPrice = 10 + (livraison ? 5 : 0);
 
-  const handleAddressPress = () => {
+  const handleAddressClick = () => {
     if (!client.adresse) return;
     navigator.clipboard?.writeText(client.adresse);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  const handleAddressLongPress = () => {
-    if (!client.adresse) return;
-    const encoded = encodeURIComponent(client.adresse);
-    window.open(`https://waze.com/ul?q=${encoded}`, "_blank");
-  };
-  const addrPressStart = () => { pressTimer.current = setTimeout(handleAddressLongPress, 600); };
-  const addrPressEnd = (e) => {
-    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
-  };
+  const addrPressStart = () => { pressTimer.current = setTimeout(() => { if (client.adresse) window.open(`https://waze.com/ul?q=${encodeURIComponent(client.adresse)}`, "_blank"); }, 600); };
+  const addrPressEnd = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
 
-  const submitCmd = () => {
-    onAddCommande(client.id, { gout, quantite: qty, date, livraison });
-    setShowCmd(false); setQty(1); setLivraison(false);
-  };
-  const submitParr = () => {
-    if (!parrId) return;
-    onAddParrainage(client.id, parseInt(parrId));
-    setShowParr(false); setParrId("");
-  };
+  const submitCmd = () => { onAddCommande(client.id, { gout, quantite: qty, date, livraison }); setShowCmd(false); setQty(1); setLivraison(false); };
+  const submitParr = () => { if (!parrId) return; onAddParrainage(client.id, parseInt(parrId)); setShowParr(false); setParrId(""); };
 
-  const ios = { card: "bg-white rounded-2xl shadow-sm", row: "flex items-center gap-3 px-4 py-3.5 border-b last:border-0" };
+  const ROW = "flex items-center gap-3 px-4 py-3.5 border-b last:border-0";
 
   return (
     <div className="space-y-5 pb-28" style={{ background: "#F2F2F7", minHeight: "100vh" }}>
-      {showDeleteModal && (
-        <DeleteClientModal client={client} onCancel={() => setShowDeleteModal(false)} onConfirm={(keep) => { onDelete(client.id, keep); setShowDeleteModal(false); }} />
-      )}
+      {showDeleteModal && <DeleteClientModal client={client} onCancel={() => setShowDeleteModal(false)} onConfirm={(keep) => { onDelete(client.id, keep); setShowDeleteModal(false); }} />}
 
       <div className="flex items-center justify-between pt-3 pb-1">
-        <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium" style={{ color: "#007AFF" }}>
-          <span className="text-lg">‹</span> Clients
-        </button>
-        <button onClick={() => setShowDeleteModal(true)} className="text-sm font-medium px-3 py-1.5 rounded-full" style={{ color: "#FF3B30", background: "#FFF1F0" }}>
-          Supprimer
-        </button>
+        <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium" style={{ color: "#007AFF" }}><span className="text-lg">‹</span> Clients</button>
+        <button onClick={() => setShowDeleteModal(true)} className="text-sm font-medium px-3 py-1.5 rounded-full" style={{ color: "#FF3B30", background: "#FFF1F0" }}>Supprimer</button>
       </div>
 
-      {/* Profile */}
-      <div className={ios.card + " p-5"}>
+      <div className="bg-white rounded-2xl shadow-sm p-5">
         <div className="flex gap-4 items-center">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #007AFF, #34C759)" }}>
-            {client.prenom.charAt(0)}
-          </div>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl flex-shrink-0" style={{ background: "linear-gradient(135deg, #007AFF, #34C759)" }}>{client.prenom.charAt(0)}</div>
           <div className="flex-1 min-w-0">
             <div className="font-bold text-xl leading-tight" style={{ color: "#1C1C1E" }}>{client.prenom}</div>
             {client.snap && <div className="text-sm mt-0.5" style={{ color: "#FFCC00" }}>👻 {client.snap}</div>}
             {client.telephone && <div className="text-sm" style={{ color: "#8E8E93" }}>{client.telephone}</div>}
           </div>
         </div>
-
-        {/* Adresse */}
         {client.adresse && (
-          <button
-            onMouseDown={addrPressStart} onMouseUp={addrPressEnd} onMouseLeave={addrPressEnd}
-            onTouchStart={addrPressStart} onTouchEnd={addrPressEnd}
-            onClick={handleAddressPress}
+          <button onMouseDown={addrPressStart} onMouseUp={addrPressEnd} onMouseLeave={addrPressEnd} onTouchStart={addrPressStart} onTouchEnd={addrPressEnd} onClick={handleAddressClick}
             className="mt-3 w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left"
             style={{ background: copied ? "#F0FDF4" : "#F2F2F7" }}>
             <span>📍</span>
-            <span className="text-xs flex-1" style={{ color: copied ? "#34C759" : "#3C3C43" }}>
-              {copied ? "Adresse copiée ✓" : client.adresse}
-            </span>
-            <span className="text-xs" style={{ color: "#C7C7CC" }}>Tap: copier · Hold: Waze</span>
+            <span className="text-xs flex-1" style={{ color: copied ? "#34C759" : "#3C3C43" }}>{copied ? "Adresse copiée ✓" : client.adresse}</span>
+            <span className="text-[10px]" style={{ color: "#C7C7CC" }}>Tap: copier · Hold: Waze</span>
           </button>
         )}
-
         <div className="flex gap-2 mt-3 flex-wrap">
-          <span className="text-xs px-2.5 py-1 rounded-full font-medium"
-            style={{ background: client.commandes.length > 0 ? "#F0FDF4" : "#F2F2F7", color: client.commandes.length > 0 ? "#34C759" : "#8E8E93" }}>
+          <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: client.commandes.length > 0 ? "#F0FDF4" : "#F2F2F7", color: client.commandes.length > 0 ? "#34C759" : "#8E8E93" }}>
             {client.commandes.length > 0 ? "● Actif" : "○ Inscrit"}
           </span>
           {inactive && <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ background: "#FFF1F0", color: "#FF3B30" }}>Inactif {daysSince(last.date)}j</span>}
@@ -331,14 +276,9 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
         <div className="text-xs mt-2" style={{ color: "#C7C7CC" }}>Inscrit le {fmtDate(client.dateInscription)}</div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: "Commandes", val: client.commandes.length, color: "#34C759" },
-          { label: "Unités", val: totalUnites, color: "#007AFF" },
-          { label: "CA total", val: `${ca}€`, color: "#FF9500" },
-        ].map(s => (
-          <div key={s.label} className={ios.card + " p-4 text-center"}>
+        {[{ label: "Commandes", val: client.commandes.length, color: "#34C759" }, { label: "Unités", val: totalUnites, color: "#007AFF" }, { label: "CA total", val: `${ca}€`, color: "#FF9500" }].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold" style={{ color: s.color }}>{s.val}</div>
             <div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>{s.label}</div>
           </div>
@@ -346,7 +286,7 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
       </div>
 
       {(fav || last) && (
-        <div className={ios.card + " px-4 py-3 flex items-center gap-3"}>
+        <div className="bg-white rounded-2xl shadow-sm px-4 py-3 flex items-center gap-3">
           {fav && <span className="text-2xl">{fav.emoji}</span>}
           <div className="flex-1">
             {fav && <div className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>Préféré : <span style={{ color: fav.color }}>{fav.label}</span></div>}
@@ -355,63 +295,41 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
         </div>
       )}
 
-      {/* Parrainage status */}
       {parrStatus && (
         <div className="rounded-2xl p-4 space-y-3" style={{ background: `${parrStatus.color}15`, border: `1px solid ${parrStatus.color}30` }}>
           <div className="text-sm font-semibold" style={{ color: parrStatus.color }}>{parrStatus.label}</div>
           <div className="flex gap-2 flex-wrap">
-            {actifs === 2 && <button onClick={() => onToggle(client.id, "relance1")} className="flex-1 py-2 rounded-xl text-xs font-semibold border"
-              style={client.relance1 ? { background: "#8E8E9320", color: "#8E8E93", borderColor: "#8E8E9340" } : { background: "#FF950020", color: "#FF9500", borderColor: "#FF950040" }}>
-              {client.relance1 ? "✓ Relancé" : "Marquer relancé"}
-            </button>}
-            {actifs >= 3 && !client.produit5Offert && <button onClick={() => onToggle(client.id, "produit5Offert")} className="flex-1 py-2 rounded-xl text-xs font-semibold border"
-              style={{ background: "#007AFF20", color: "#007AFF", borderColor: "#007AFF40" }}>Puff 5€ offert</button>}
-            {actifs === 4 && <button onClick={() => onToggle(client.id, "relance2")} className="flex-1 py-2 rounded-xl text-xs font-semibold border"
-              style={client.relance2 ? { background: "#8E8E9320", color: "#8E8E93", borderColor: "#8E8E9340" } : { background: "#FF950020", color: "#FF9500", borderColor: "#FF950040" }}>
-              {client.relance2 ? "✓ Relancé" : "Marquer relancé"}
-            </button>}
-            {actifs >= 5 && !client.produitGratuitOffert && <button onClick={() => onToggle(client.id, "produitGratuitOffert")} className="flex-1 py-2 rounded-xl text-xs font-semibold border"
-              style={{ background: "#34C75920", color: "#34C759", borderColor: "#34C75940" }}>Puff gratuit offert</button>}
+            {actifs === 2 && <button onClick={() => onToggle(client.id, "relance1")} className="flex-1 py-2 rounded-xl text-xs font-semibold border" style={client.relance1 ? { background: "#8E8E9320", color: "#8E8E93", borderColor: "#8E8E9340" } : { background: "#FF950020", color: "#FF9500", borderColor: "#FF950040" }}>{client.relance1 ? "✓ Relancé" : "Marquer relancé"}</button>}
+            {actifs >= 3 && !client.produit5Offert && <button onClick={() => onToggle(client.id, "produit5Offert")} className="flex-1 py-2 rounded-xl text-xs font-semibold border" style={{ background: "#007AFF20", color: "#007AFF", borderColor: "#007AFF40" }}>Puff 5€ offert</button>}
+            {actifs === 4 && <button onClick={() => onToggle(client.id, "relance2")} className="flex-1 py-2 rounded-xl text-xs font-semibold border" style={client.relance2 ? { background: "#8E8E9320", color: "#8E8E93", borderColor: "#8E8E9340" } : { background: "#FF950020", color: "#FF9500", borderColor: "#FF950040" }}>{client.relance2 ? "✓ Relancé" : "Marquer relancé"}</button>}
+            {actifs >= 5 && !client.produitGratuitOffert && <button onClick={() => onToggle(client.id, "produitGratuitOffert")} className="flex-1 py-2 rounded-xl text-xs font-semibold border" style={{ background: "#34C75920", color: "#34C759", borderColor: "#34C75940" }}>Puff gratuit offert</button>}
           </div>
           <div className="space-y-1">
-            <div className="flex justify-between text-xs" style={{ color: "#8E8E93" }}>
-              <span>{actifs} filleuls actifs</span><span>{Math.min(actifs, 5)}/5</span>
-            </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5E5EA" }}>
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (actifs / 5) * 100)}%`, background: parrStatus.color }} />
-            </div>
-            <div className="flex justify-between text-[10px]" style={{ color: "#C7C7CC" }}>
-              <span>0</span><span>3 → puff 5€</span><span>5 → gratuit</span>
-            </div>
+            <div className="flex justify-between text-xs" style={{ color: "#8E8E93" }}><span>{actifs} filleuls actifs</span><span>{Math.min(actifs, 5)}/5</span></div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5E5EA" }}><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (actifs / 5) * 100)}%`, background: parrStatus.color }} /></div>
+            <div className="flex justify-between text-[10px]" style={{ color: "#C7C7CC" }}><span>0</span><span>3 → puff 5€</span><span>5 → gratuit</span></div>
           </div>
         </div>
       )}
 
-      {/* Commandes */}
       <div>
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-sm font-semibold" style={{ color: "#3C3C43" }}>Commandes</span>
-          <button onClick={() => { setShowCmd(v => !v); setShowParr(false); }} className="text-sm font-medium" style={{ color: "#007AFF" }}>
-            {showCmd ? "Annuler" : "+ Nouvelle"}
-          </button>
+          <button onClick={() => { setShowCmd(v => !v); setShowParr(false); }} className="text-sm font-medium" style={{ color: "#007AFF" }}>{showCmd ? "Annuler" : "+ Nouvelle"}</button>
         </div>
         {showCmd && (
-          <div className={ios.card + " p-4 mb-3 space-y-4"}>
+          <div className="bg-white rounded-2xl shadow-sm p-4 mb-3 space-y-4">
             <div>
               <div className="text-xs font-semibold mb-2" style={{ color: "#8E8E93" }}>GOÛT</div>
               <div className="grid grid-cols-3 gap-2">
                 {flavors.map(f => (
-                  <button key={f.id} onClick={() => setGout(f.id)}
-                    className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold border transition-all"
+                  <button key={f.id} onClick={() => setGout(f.id)} className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-semibold border transition-all"
                     style={gout === f.id ? { background: f.bg, borderColor: f.color, color: f.color } : { background: "#F2F2F7", borderColor: "transparent", color: "#8E8E93" }}>
                     <span className="text-xl">{f.emoji}</span>{f.label}
                   </button>
                 ))}
               </div>
-              {selF && <div className="text-xs mt-2" style={{ color: stock[selF.id] < qty ? "#FF3B30" : "#8E8E93" }}>
-                Stock {selF.label} : <span className="font-semibold">{stock[selF.id] || 0}</span>
-                {qty > (stock[selF.id] || 0) && " — insuffisant ⚠"}
-              </div>}
+              {selF && <div className="text-xs mt-2" style={{ color: (stock[selF.id] || 0) < qty ? "#FF3B30" : "#8E8E93" }}>Stock {selF.label} : <span className="font-semibold">{stock[selF.id] || 0}</span>{qty > (stock[selF.id] || 0) && " — insuffisant ⚠"}</div>}
             </div>
             <div className="flex gap-3">
               <div className="flex-1">
@@ -438,40 +356,30 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
               <span className="text-sm" style={{ color: "#8E8E93" }}>Prix commande</span>
               <span className="text-lg font-bold" style={{ color: "#34C759" }}>{cmdPrice}€</span>
             </div>
-            <button onClick={submitCmd} disabled={qty > (stock[gout] || 0)} className="w-full py-3.5 rounded-2xl font-semibold text-sm text-white"
-              style={{ background: qty > (stock[gout] || 0) ? "#C7C7CC" : "#007AFF" }}>Enregistrer la commande</button>
+            <button onClick={submitCmd} disabled={qty > (stock[gout] || 0)} className="w-full py-3.5 rounded-2xl font-semibold text-sm text-white" style={{ background: qty > (stock[gout] || 0) ? "#C7C7CC" : "#007AFF" }}>Enregistrer la commande</button>
           </div>
         )}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
           {client.commandes.length > 0 ? [...client.commandes].reverse().map((cmd, i) => {
             const f = flavors.find(fl => fl.id === cmd.gout);
             return (
-              <div key={i} className={ios.row} style={{ borderColor: "#F2F2F7" }}>
+              <div key={i} className={ROW} style={{ borderColor: "#F2F2F7" }}>
                 <span className="text-2xl">{f?.emoji || "📦"}</span>
-                <div className="flex-1">
-                  <div className="text-sm font-medium" style={{ color: "#1C1C1E" }}>{f?.label || cmd.gout}{cmd.livraison ? " · 🚚" : ""}</div>
-                  <div className="text-xs" style={{ color: "#8E8E93" }}>{fmtDate(cmd.date)}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>×{cmd.quantite}</div>
-                  <div className="text-xs font-medium" style={{ color: "#34C759" }}>{cmdCA(cmd)}€</div>
-                </div>
+                <div className="flex-1"><div className="text-sm font-medium" style={{ color: "#1C1C1E" }}>{f?.label || cmd.gout}{cmd.livraison ? " · 🚚" : ""}</div><div className="text-xs" style={{ color: "#8E8E93" }}>{fmtDate(cmd.date)}</div></div>
+                <div className="text-right"><div className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>×{cmd.quantite}</div><div className="text-xs font-medium" style={{ color: "#34C759" }}>{cmdCA(cmd)}€</div></div>
               </div>
             );
           }) : <div className="px-4 py-8 text-center text-sm" style={{ color: "#C7C7CC" }}>Aucune commande</div>}
         </div>
       </div>
 
-      {/* Parrainage */}
       <div>
         <div className="flex items-center justify-between mb-2 px-1">
           <span className="text-sm font-semibold" style={{ color: "#3C3C43" }}>Parrainage</span>
-          <button onClick={() => { setShowParr(v => !v); setShowCmd(false); }} className="text-sm font-medium" style={{ color: "#007AFF" }}>
-            {showParr ? "Annuler" : "+ Filleul"}
-          </button>
+          <button onClick={() => { setShowParr(v => !v); setShowCmd(false); }} className="text-sm font-medium" style={{ color: "#007AFF" }}>{showParr ? "Annuler" : "+ Filleul"}</button>
         </div>
         {showParr && (
-          <div className={ios.card + " p-4 mb-3 space-y-3"}>
+          <div className="bg-white rounded-2xl shadow-sm p-4 mb-3 space-y-3">
             <select value={parrId} onChange={e => setParrId(e.target.value)} className="w-full text-sm px-4 py-3 rounded-xl outline-none" style={{ background: "#F2F2F7", color: "#1C1C1E" }}>
               <option value="">— Choisir un client —</option>
               {clients.filter(c => c.id !== client.id && c.parrainePar === null).map(c => <option key={c.id} value={c.id}>{c.prenom}</option>)}
@@ -480,26 +388,20 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
           </div>
         )}
         <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className={ios.row} style={{ borderColor: "#F2F2F7" }}>
+          <div className={ROW} style={{ borderColor: "#F2F2F7" }}>
             <span className="text-xl" style={{ color: "#007AFF" }}>👥</span>
             <div className="flex-1 text-sm" style={{ color: "#1C1C1E" }}>{actifs}/{client.parrainageFait.length} filleuls ont commandé</div>
           </div>
           {filleulsOui.map(id => { const f = getC(id); if (!f) return null; return (
-            <div key={id} className={ios.row} style={{ borderColor: "#F2F2F7" }}>
+            <div key={id} className={ROW} style={{ borderColor: "#F2F2F7" }}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: "linear-gradient(135deg, #34C759, #007AFF)" }}>{f.prenom.charAt(0)}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate" style={{ color: "#1C1C1E" }}>{f.prenom}</div>
-                <div className="text-xs" style={{ color: "#34C759" }}>{f.commandes.length} commande{f.commandes.length > 1 ? "s" : ""}</div>
-              </div>
+              <div className="flex-1 min-w-0"><div className="text-sm font-medium truncate" style={{ color: "#1C1C1E" }}>{f.prenom}</div><div className="text-xs" style={{ color: "#34C759" }}>{f.commandes.length} commande{f.commandes.length > 1 ? "s" : ""}</div></div>
             </div>
           ); })}
           {filleulsNon.map(id => { const f = getC(id); if (!f) return null; return (
-            <div key={id} className={ios.row} style={{ borderColor: "#F2F2F7" }}>
+            <div key={id} className={ROW} style={{ borderColor: "#F2F2F7" }}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0" style={{ background: "#F2F2F7", color: "#C7C7CC" }}>{f.prenom.charAt(0)}</div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm truncate" style={{ color: "#8E8E93" }}>{f.prenom}</div>
-                <div className="text-xs" style={{ color: "#C7C7CC" }}>Pas encore commandé</div>
-              </div>
+              <div className="flex-1 min-w-0"><div className="text-sm truncate" style={{ color: "#8E8E93" }}>{f.prenom}</div><div className="text-xs" style={{ color: "#C7C7CC" }}>Pas encore commandé</div></div>
             </div>
           ); })}
           {client.parrainageFait.length === 0 && <div className="px-4 py-6 text-center text-sm" style={{ color: "#C7C7CC" }}>Aucun filleul</div>}
@@ -575,21 +477,17 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
     onUpdateFlavors([...flavors, { id, label: newFlavorLabel.trim(), emoji: newFlavorEmoji, color: newFlavorColor, bg: newFlavorColor + "20" }]);
     setNewFlavorLabel(""); setNewFlavorEmoji("🍎"); setNewFlavorColor("#007AFF");
   };
-  const deleteFlavor = (id) => onUpdateFlavors(flavors.filter(f => f.id !== id));
-  const saveEdit = (id) => {
-    onUpdateFlavors(flavors.map(f => f.id === id ? { ...f, label: editLabel } : f));
-    setEditingId(null);
-  };
+  const deleteFlavor = id => onUpdateFlavors(flavors.filter(f => f.id !== id));
+  const saveEdit = id => { onUpdateFlavors(flavors.map(f => f.id === id ? { ...f, label: editLabel } : f)); setEditingId(null); };
 
   const total = Object.values(stock).reduce((a, b) => a + b, 0);
   const available = flavors.filter(f => (stock[f.id] || 0) > 0);
 
-  // Optimized screen mode - fits all without scrolling
   if (screenMode) {
     const count = available.length;
-    const fontSize = count <= 3 ? "text-4xl" : count <= 5 ? "text-3xl" : "text-2xl";
-    const qtySize = count <= 3 ? "text-6xl" : count <= 5 ? "text-5xl" : "text-4xl";
-    const py = count <= 3 ? "py-6" : count <= 5 ? "py-4" : "py-2";
+    const textSize = count <= 3 ? "1.8rem" : count <= 5 ? "1.4rem" : "1.1rem";
+    const numSize = count <= 3 ? "3.5rem" : count <= 5 ? "2.8rem" : "2rem";
+    const padY = count <= 3 ? "1.5rem" : count <= 5 ? "1rem" : "0.6rem";
     return (
       <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "white" }}>
         <div className="flex justify-end px-5" style={{ paddingTop: "env(safe-area-inset-top, 44px)" }}>
@@ -597,12 +495,12 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
         </div>
         <div className="flex-1 flex flex-col justify-center px-8">
           {available.map((f, i) => (
-            <div key={f.id} className={`flex items-center justify-between ${py} ${i < available.length - 1 ? "border-b" : ""}`} style={{ borderColor: "#F2F2F7" }}>
+            <div key={f.id} className="flex items-center justify-between" style={{ paddingTop: padY, paddingBottom: padY, borderBottom: i < available.length - 1 ? "1px solid #F2F2F7" : "none" }}>
               <div className="flex items-center gap-3">
-                <span className={fontSize}>{f.emoji}</span>
-                <span className={`font-bold ${fontSize}`} style={{ color: "#1C1C1E" }}>{f.label}</span>
+                <span style={{ fontSize: textSize }}>{f.emoji}</span>
+                <span style={{ fontSize: textSize, fontWeight: 700, color: "#1C1C1E" }}>{f.label}</span>
               </div>
-              <span className={`font-bold ${qtySize}`} style={{ color: f.color }}>{stock[f.id] || 0}</span>
+              <span style={{ fontSize: numSize, fontWeight: 700, color: f.color, fontFamily: "-apple-system, sans-serif" }}>{stock[f.id] || 0}</span>
             </div>
           ))}
           {!available.length && <div className="text-center text-lg font-medium" style={{ color: "#C7C7CC" }}>Aucun stock disponible</div>}
@@ -621,13 +519,10 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
         <div className="flex gap-2">
           <button onClick={() => setManageFlavors(v => !v)} className="px-3 py-2 rounded-xl text-sm font-medium" style={{ background: "white", color: "#3C3C43", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>⚙️</button>
           <button onClick={() => setScreenMode(true)} className="px-3 py-2 rounded-xl text-sm font-medium" style={{ background: "white", color: "#3C3C43", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>📋</button>
-          <button onClick={scanning ? stopCamera : startCamera} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: scanning ? "#FF3B30" : "#007AFF" }}>
-            {scanning ? "✕" : "📷"}
-          </button>
+          <button onClick={scanning ? stopCamera : startCamera} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: scanning ? "#FF3B30" : "#007AFF" }}>{scanning ? "✕" : "📷"}</button>
         </div>
       </div>
 
-      {/* Manage flavors */}
       {manageFlavors && (
         <div className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
           <div className="text-sm font-semibold" style={{ color: "#3C3C43" }}>Gérer les goûts</div>
@@ -651,18 +546,14 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
           ))}
           <div className="border-t pt-3" style={{ borderColor: "#F2F2F7" }}>
             <div className="text-xs font-semibold mb-2" style={{ color: "#8E8E93" }}>AJOUTER UN GOÛT</div>
-            <div className="flex gap-2 mb-2">
-              <input value={newFlavorLabel} onChange={e => setNewFlavorLabel(e.target.value)} placeholder="Nom du goût" className="flex-1 text-sm px-3 py-2 rounded-xl outline-none" style={{ background: "#F2F2F7", color: "#1C1C1E" }} />
-            </div>
-            <div className="flex gap-2 mb-2 flex-wrap">
-              {FLAVOR_EMOJIS.slice(0, 8).map(em => (
-                <button key={em} onClick={() => setNewFlavorEmoji(em)} className="text-xl p-1 rounded-lg" style={{ background: newFlavorEmoji === em ? "#007AFF20" : "transparent" }}>{em}</button>
-              ))}
+            <input value={newFlavorLabel} onChange={e => setNewFlavorLabel(e.target.value)} placeholder="Nom du goût" className="w-full text-sm px-3 py-2 rounded-xl outline-none mb-2" style={{ background: "#F2F2F7", color: "#1C1C1E" }} />
+            <div className="flex items-center gap-2 mb-2">
+              <div className="text-xs font-semibold" style={{ color: "#8E8E93" }}>EMOJI</div>
+              <input value={newFlavorEmoji} onChange={e => setNewFlavorEmoji(e.target.value)} placeholder="🍎" className="w-16 text-center text-2xl px-2 py-1 rounded-xl outline-none" style={{ background: "#F2F2F7" }} maxLength={2} />
+              <span className="text-xs" style={{ color: "#C7C7CC" }}>Tape ou colle n'importe quel emoji</span>
             </div>
             <div className="flex gap-2 mb-3 flex-wrap">
-              {FLAVOR_COLORS.map(c => (
-                <button key={c} onClick={() => setNewFlavorColor(c)} className="w-7 h-7 rounded-full border-2" style={{ background: c, borderColor: newFlavorColor === c ? "#1C1C1E" : "transparent" }} />
-              ))}
+              {FLAVOR_COLORS.map(c => <button key={c} onClick={() => setNewFlavorColor(c)} className="w-7 h-7 rounded-full border-2" style={{ background: c, borderColor: newFlavorColor === c ? "#1C1C1E" : "transparent" }} />)}
             </div>
             <button onClick={addFlavor} disabled={!newFlavorLabel.trim()} className="w-full py-2.5 rounded-xl text-sm font-semibold text-white" style={{ background: newFlavorLabel.trim() ? "#007AFF" : "#C7C7CC" }}>
               Ajouter {newFlavorEmoji} {newFlavorLabel || "..."}
@@ -671,7 +562,6 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
         </div>
       )}
 
-      {/* Scanner */}
       {scanning && (
         <div className="rounded-2xl overflow-hidden bg-white shadow-sm">
           <div className="relative">
@@ -714,22 +604,16 @@ function StockPage({ stock, flavors, onUpdate, onUpdateFlavors }) {
         </div>
       )}
 
-      {/* Stock grid */}
       <div className="grid grid-cols-2 gap-3">
         {flavors.map(f => {
           const q = stock[f.id] || 0;
           return (
             <div key={f.id} className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{f.emoji}</span>
-                  <span className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>{f.label}</span>
-                </div>
+                <div className="flex items-center gap-2"><span className="text-2xl">{f.emoji}</span><span className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>{f.label}</span></div>
                 <span className="text-2xl font-bold" style={{ color: f.color }}>{q}</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#F2F2F7" }}>
-                <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (q / 20) * 100)}%`, background: f.color }} />
-              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#F2F2F7" }}><div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (q / 20) * 100)}%`, background: f.color }} /></div>
               <div className="flex gap-2">
                 <button onClick={() => onUpdate(f.id, -1)} disabled={q === 0} className="flex-1 py-2 rounded-xl text-sm font-semibold disabled:opacity-30" style={{ background: "#FFF1F0", color: "#FF3B30" }}>−1</button>
                 <button onClick={() => onUpdate(f.id, 1)} className="flex-1 py-2 rounded-xl text-sm font-semibold" style={{ background: "#F0FDF4", color: "#34C759" }}>+1</button>
@@ -786,6 +670,8 @@ function StatsPage({ clients, flavors }) {
   );
 
   const P = "bg-white rounded-2xl shadow-sm p-4 space-y-4";
+  const W = weeks.length ? weeks : [lastWeek];
+
   return (
     <div className="space-y-5 pb-28">
       <h2 className="text-2xl font-bold pt-2" style={{ color: "#1C1C1E" }}>Statistiques</h2>
@@ -815,22 +701,20 @@ function StatsPage({ clients, flavors }) {
         </div>,
         <div className={P}>
           <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Par semaine</div>
-          {weeks.length > 0 ? <>
-            <WeekSelector weeks={weeks} current={weekSel} onChange={setWeekSel} />
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-3 text-center" style={{ background: "#F2F2F7" }}><div className="text-2xl font-bold" style={{ color: "#34C759" }}>{weekCmds.length}</div><div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>Ventes</div></div>
-              <div className="rounded-xl p-3 text-center" style={{ background: "#F2F2F7" }}><div className="text-2xl font-bold" style={{ color: "#007AFF" }}>{weekNewClients}</div><div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>Nvx clients</div></div>
+          <WeekSelector weeks={W} current={weekSel} onChange={setWeekSel} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3 text-center" style={{ background: "#F2F2F7" }}><div className="text-2xl font-bold" style={{ color: "#34C759" }}>{weekCmds.length}</div><div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>Ventes</div></div>
+            <div className="rounded-xl p-3 text-center" style={{ background: "#F2F2F7" }}><div className="text-2xl font-bold" style={{ color: "#007AFF" }}>{weekNewClients}</div><div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>Nvx clients</div></div>
+          </div>
+          <div className="rounded-xl p-4" style={{ background: "#F2F2F7" }}>
+            <div className="text-xs font-semibold mb-1" style={{ color: "#8E8E93" }}>CA CETTE SEMAINE</div>
+            <div className="text-3xl font-bold" style={{ color: "#34C759" }}>{weekCAVal}€</div>
+            <div className="flex gap-4 mt-2">
+              <span className="text-xs" style={{ color: "#8E8E93" }}>🛍 <span style={{ color: "#1C1C1E", fontWeight: 600 }}>{weekProdCA}€</span></span>
+              <span className="text-xs" style={{ color: "#8E8E93" }}>🚚 <span style={{ color: "#1C1C1E", fontWeight: 600 }}>{weekLivCA}€</span></span>
             </div>
-            <div className="rounded-xl p-4" style={{ background: "#F2F2F7" }}>
-              <div className="text-xs font-semibold mb-1" style={{ color: "#8E8E93" }}>CA CETTE SEMAINE</div>
-              <div className="text-3xl font-bold" style={{ color: "#34C759" }}>{weekCAVal}€</div>
-              <div className="flex gap-4 mt-2">
-                <span className="text-xs" style={{ color: "#8E8E93" }}>🛍 <span style={{ color: "#1C1C1E", fontWeight: 600 }}>{weekProdCA}€</span></span>
-                <span className="text-xs" style={{ color: "#8E8E93" }}>🚚 <span style={{ color: "#1C1C1E", fontWeight: 600 }}>{weekLivCA}€</span></span>
-              </div>
-            </div>
-            {bestWeekEntry && weekSel === bestWeekEntry[0] && <div className="text-center text-sm font-semibold" style={{ color: "#FF9500" }}>⭐ Votre meilleure semaine !</div>}
-          </> : <p className="text-sm" style={{ color: "#C7C7CC" }}>Aucune commande encore.</p>}
+          </div>
+          {bestWeekEntry && weekSel === bestWeekEntry[0] && <div className="text-center text-sm font-semibold" style={{ color: "#FF9500" }}>⭐ Votre meilleure semaine !</div>}
         </div>,
         <div className={P}>
           <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Évolution CA</div>
@@ -850,24 +734,36 @@ function StatsPage({ clients, flavors }) {
           </div>
         </div>
       ]} />
+
       <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
         <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Ventes par goût</div>
-        {flavors.map(f => {
+        {[...flavors].sort((a, b) => {
+          const totA = allCmds.filter(c => c.gout === a.id).reduce((s, c) => s + c.quantite, 0);
+          const totB = allCmds.filter(c => c.gout === b.id).reduce((s, c) => s + c.quantite, 0);
+          return totB - totA;
+        }).map((f, i) => {
           const tot = allCmds.filter(c => c.gout === f.id).reduce((s, c) => s + c.quantite, 0);
           const maxF = Math.max(...flavors.map(fl => allCmds.filter(c => c.gout === fl.id).reduce((s, c) => s + c.quantite, 0)), 1);
           return <div key={f.id} className="space-y-1.5">
-            <div className="flex justify-between"><span className="text-sm" style={{ color: "#1C1C1E" }}>{f.emoji} {f.label}</span><span className="text-sm font-semibold" style={{ color: f.color }}>{tot} unités</span></div>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-1.5">
+                {i === 0 && tot > 0 && <span className="text-xs">🏆</span>}
+                <span className="text-sm" style={{ color: "#1C1C1E" }}>{f.emoji} {f.label}</span>
+              </div>
+              <span className="text-sm font-semibold" style={{ color: f.color }}>{tot} unités</span>
+            </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: "#F2F2F7" }}><div className="h-full rounded-full transition-all" style={{ width: `${(tot / maxF) * 100}%`, background: f.color }} /></div>
           </div>;
         })}
       </div>
+
       <Carousel panels={[
         <div className={P}>
           <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Conversion clients</div>
           <div className="text-center py-1"><div className="text-5xl font-bold" style={{ color: "#007AFF" }}>{tauxCliGlobal}%</div><div className="text-xs mt-1" style={{ color: "#8E8E93" }}>{clientsActifs} sur {totalClients} ont commandé</div></div>
           <Bar val={tauxCliGlobal} color="#007AFF" label="Global" />
           <div className="border-t pt-3" style={{ borderColor: "#F2F2F7" }}>
-            <WeekSelector weeks={weeks.length ? weeks : [lastWeek]} current={weekConv} onChange={setWeekConv} />
+            <WeekSelector weeks={W} current={weekConv} onChange={setWeekConv} />
             <Bar val={tauxCliWeek} color="#007AFF" label="Semaine" sub={`${weekCliActifs}/${weekCliAll.length} clients`} />
           </div>
         </div>,
@@ -876,10 +772,56 @@ function StatsPage({ clients, flavors }) {
           <div className="text-center py-1"><div className="text-5xl font-bold" style={{ color: "#FF9500" }}>{tauxFilGlobal}%</div><div className="text-xs mt-1" style={{ color: "#8E8E93" }}>{filleulsActifsG} sur {allFilleuls.length} ont commandé</div></div>
           <Bar val={tauxFilGlobal} color="#FF9500" label="Global" />
           <div className="border-t pt-3" style={{ borderColor: "#F2F2F7" }}>
-            <WeekSelector weeks={weeks.length ? weeks : [lastWeek]} current={weekConv} onChange={setWeekConv} />
+            <WeekSelector weeks={W} current={weekConv} onChange={setWeekConv} />
             <Bar val={tauxFilWeek} color="#FF9500" label="Semaine" sub={`${weekFilActifs}/${weekFil.length} filleuls`} />
           </div>
         </div>,
+        (() => {
+          // Fidélisation : nb de commandes par client (nombre de commandes = nb de fois qu'il a commandé)
+          const nbCmdByClient = clients.map(c => c.commandes.length);
+          const maxCmds = Math.max(...nbCmdByClient, 1);
+          // Compter combien de clients ont 0 cmd, 1 cmd, 2 cmd, etc.
+          const counts = {};
+          for (let i = 0; i <= maxCmds; i++) counts[i] = 0;
+          nbCmdByClient.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+          const labels = Object.keys(counts).map(Number).sort((a, b) => a - b);
+          const maxCount = Math.max(...labels.map(l => counts[l]), 1);
+          const fideles = clients.filter(c => c.commandes.length >= 2).length;
+          const tauxFid = totalClients > 0 ? Math.round((fideles / totalClients) * 100) : 0;
+          return (
+            <div className={P}>
+              <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Fidélisation</div>
+              <div className="rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "#F0FDF4" }}>
+                <div>
+                  <div className="text-xs font-bold" style={{ color: "#34C759" }}>Clients fidèles (2+ commandes)</div>
+                  <div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>{fideles} sur {totalClients} clients</div>
+                </div>
+                <div className="text-3xl font-bold" style={{ color: "#34C759" }}>{tauxFid}%</div>
+              </div>
+              <div style={{ height: 130 }}>
+                <svg width="100%" height="130" viewBox={`0 0 ${Math.max(labels.length, 1) * 44} 130`} preserveAspectRatio="none">
+                  {labels.map((l, i) => {
+                    const count = counts[l] || 0;
+                    const h = Math.max((count / maxCount) * 100, count > 0 ? 8 : 0);
+                    return (
+                      <g key={l}>
+                        <rect x={i * 44 + 6} y={110 - h} width={32} height={h} rx="6"
+                          fill={l === 0 ? "#C7C7CC" : l >= 2 ? "#34C759" : "#007AFF"} opacity={0.8} />
+                        {count > 0 && <text x={i * 44 + 22} y={104 - h} textAnchor="middle" fontSize="10" fill="#8E8E93" fontWeight="600">{count}</text>}
+                        <text x={i * 44 + 22} y={125} textAnchor="middle" fontSize="9" fill="#C7C7CC">{l === 0 ? "0 cmd" : `${l} cmd`}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="flex gap-3 flex-wrap">
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#C7C7CC" }}></span>0 commande</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#007AFF" }}></span>1 commande</span>
+                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-3 h-3 rounded" style={{ background: "#34C759" }}></span>2+ commandes</span>
+              </div>
+            </div>
+          );
+        })(),
         <div className={P}>
           <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Parrains 3+ filleuls actifs</div>
           {topParrains.length > 0 ? topParrains.map(c => {
@@ -906,24 +848,24 @@ const TABS = [
 
 export default function App() {
   const [clients, setClients] = useState(() => {
-  try { const s = localStorage.getItem('dg_clients'); return s ? JSON.parse(s) : initClients; } catch { return initClients; }
-});
-const [stock, setStock] = useState(() => {
-  try { const s = localStorage.getItem('dg_stock'); return s ? JSON.parse(s) : initStock; } catch { return initStock; }
-});
-const [flavors, setFlavors] = useState(() => {
-  try { const s = localStorage.getItem('dg_flavors'); return s ? JSON.parse(s) : DEFAULT_FLAVORS; } catch { return DEFAULT_FLAVORS; }
-});
-const [tab, setTab] = useState("clients");
-const [search, setSearch] = useState("");
-const [selectedId, setSelectedId] = useState(null);
-const [notif, setNotif] = useState(null);
-const [deleteTarget, setDeleteTarget] = useState(null);
-const [newClient, setNewClient] = useState({ prenom: "", snap: "", telephone: "", adresse: "", parrainePar: "" });
-  
-useEffect(() => { try { localStorage.setItem('dg_clients', JSON.stringify(clients)); } catch {} }, [clients]);
-useEffect(() => { try { localStorage.setItem('dg_stock', JSON.stringify(stock)); } catch {} }, [stock]);
-useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavors)); } catch {} }, [flavors]);
+    try { const s = localStorage.getItem("dg_clients"); return s ? JSON.parse(s) : initClients; } catch { return initClients; }
+  });
+  const [stock, setStock] = useState(() => {
+    try { const s = localStorage.getItem("dg_stock"); return s ? JSON.parse(s) : initStock; } catch { return initStock; }
+  });
+  const [flavors, setFlavors] = useState(() => {
+    try { const s = localStorage.getItem("dg_flavors"); return s ? JSON.parse(s) : DEFAULT_FLAVORS; } catch { return DEFAULT_FLAVORS; }
+  });
+  const [tab, setTab] = useState("clients");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
+  const [notif, setNotif] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [newClient, setNewClient] = useState({ prenom: "", snap: "", telephone: "", adresse: "", parrainePar: "" });
+
+  useEffect(() => { try { localStorage.setItem("dg_clients", JSON.stringify(clients)); } catch {} }, [clients]);
+  useEffect(() => { try { localStorage.setItem("dg_stock", JSON.stringify(stock)); } catch {} }, [stock]);
+  useEffect(() => { try { localStorage.setItem("dg_flavors", JSON.stringify(flavors)); } catch {} }, [flavors]);
 
   const notify = useCallback((msg, color = "green") => {
     setNotif({ msg, color });
@@ -945,9 +887,11 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
 
   const handleUpdateFlavors = (newFlavors) => {
     setFlavors(newFlavors);
-    const newStock = { ...stock };
-    newFlavors.forEach(f => { if (!(f.id in newStock)) newStock[f.id] = 0; });
-    setStock(newStock);
+    setStock(prev => {
+      const next = { ...prev };
+      newFlavors.forEach(f => { if (!(f.id in next)) next[f.id] = 0; });
+      return next;
+    });
   };
 
   const handleAddCommande = (clientId, cmd) => {
@@ -969,16 +913,14 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
 
   const handleDeleteClient = (clientId, keepHistory) => {
     setClients(prev => {
-      const filtered = prev.filter(c => c.id !== clientId);
-      // Remove from parrainageFait of others, reset parrainePar of filleuls
-      return filtered.map(c => ({
+      const next = prev.filter(c => c.id !== clientId);
+      return next.map(c => ({
         ...c,
         parrainageFait: c.parrainageFait.filter(id => id !== clientId),
         parrainePar: c.parrainePar === clientId ? null : c.parrainePar,
       }));
     });
-    if (keepHistory) notify("Client supprimé, historique conservé.");
-    else notify("Client et historique supprimés.");
+    notify(keepHistory ? "Client supprimé, historique conservé." : "Client et historique supprimés.");
     setSelectedId(null);
   };
 
@@ -997,7 +939,6 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
     setTab("clients");
   };
 
-  // Long press on client row
   const longPressHandlers = (clientId) => {
     let timer;
     return {
@@ -1009,18 +950,17 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
     };
   };
 
-  const ios = { row: "flex items-center gap-3 px-4 py-3.5 border-b last:border-0" };
+  const ROW = "flex items-center gap-3 px-4 py-3.5 border-b last:border-0";
 
   return (
     <div style={{ background: "#F2F2F7", minHeight: "100dvh", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" }}>
       {notif && (
-        <div className="fixed top-14 left-4 right-4 z-50 px-4 py-3 rounded-2xl text-sm font-semibold text-center shadow-lg"
-          style={{ background: notif.color === "red" ? "#FF3B30" : "#34C759", color: "white", zIndex: 100 }}>
+        <div className="fixed left-4 right-4 z-50 px-4 py-3 rounded-2xl text-sm font-semibold text-center shadow-lg"
+          style={{ top: "calc(env(safe-area-inset-top, 44px) + 8px)", background: notif.color === "red" ? "#FF3B30" : "#34C759", color: "white" }}>
           {notif.msg}
         </div>
       )}
 
-      {/* Long press delete modal from list */}
       {deleteTarget && (() => {
         const c = clients.find(x => x.id === deleteTarget);
         return c ? <DeleteClientModal client={c} onCancel={() => setDeleteTarget(null)} onConfirm={(keep) => { handleDeleteClient(c.id, keep); setDeleteTarget(null); }} /> : null;
@@ -1047,7 +987,7 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
                 <input type="text" placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#1C1C1E" }} />
                 {search && <button onClick={() => setSearch("")} style={{ color: "#8E8E93" }}>✕</button>}
               </div>
-              <div className="text-xs" style={{ color: "#C7C7CC" }}>Appui long sur un client pour le supprimer</div>
+              <div className="text-xs text-center" style={{ color: "#C7C7CC" }}>Appui long sur un client pour le supprimer</div>
 
               {!search && toRelance.length > 0 && (
                 <div>
@@ -1056,8 +996,7 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
                     {toRelance.map(c => {
                       const actifs = filleulsActifsCount(c, clients);
                       return (
-                        <div key={c.id} onClick={() => setSelectedId(c.id)} {...longPressHandlers(c.id)}
-                          className={ios.row + " active:bg-gray-50 cursor-pointer"} style={{ borderColor: "#F2F2F7" }}>
+                        <div key={c.id} onClick={() => setSelectedId(c.id)} {...longPressHandlers(c.id)} className={ROW + " cursor-pointer"} style={{ borderColor: "#F2F2F7" }}>
                           <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: "linear-gradient(135deg, #FF9500, #FF3B30)" }}>{c.prenom.charAt(0)}</div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>{c.prenom}</div>
@@ -1080,8 +1019,7 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
                     const last = lastOrder(c.commandes);
                     const inactive = last && daysSince(last.date) > 15;
                     return (
-                      <div key={c.id} onClick={() => setSelectedId(c.id)} {...longPressHandlers(c.id)}
-                        className={ios.row + " active:bg-gray-50 cursor-pointer"} style={{ borderColor: "#F2F2F7" }}>
+                      <div key={c.id} onClick={() => setSelectedId(c.id)} {...longPressHandlers(c.id)} className={ROW + " cursor-pointer"} style={{ borderColor: "#F2F2F7" }}>
                         <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: "linear-gradient(135deg, #007AFF, #34C759)" }}>{c.prenom.charAt(0)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-semibold" style={{ color: "#1C1C1E" }}>{c.prenom}</div>
@@ -1096,10 +1034,11 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
                       </div>
                     );
                   })}
-                  {!search && sortedFiltered.filter(c => !needsAction(c, clients)).length === 0 && toRelance.length > 0 && (
-                    <div className="px-4 py-6 text-center text-sm" style={{ color: "#C7C7CC" }}>Tous les clients sont dans "À relancer"</div>
+                  {sortedFiltered.filter(c => search || !needsAction(c, clients)).length === 0 && (
+                    <div className="px-4 py-8 text-center text-sm" style={{ color: "#C7C7CC" }}>
+                      {search ? "Aucun résultat" : "Tous dans 'À relancer'"}
+                    </div>
                   )}
-                  {!filtered.length && <div className="px-4 py-8 text-center text-sm" style={{ color: "#C7C7CC" }}>Aucun résultat</div>}
                 </div>
               </div>
             </div>
@@ -1122,15 +1061,13 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
                   { label: "Snap", key: "snap", placeholder: "jean_snap", type: "text" },
                   { label: "Téléphone", key: "telephone", placeholder: "06 00 00 00 00", type: "tel" },
                   { label: "Adresse", key: "adresse", placeholder: "5 rue de la Paix, Paris", type: "text" },
-                ].map((f, i, arr) => (
-                  <div key={f.key} className="flex items-center gap-3 px-4 py-3.5 border-b last:border-0" style={{ borderColor: "#F2F2F7" }}>
+                ].map(f => (
+                  <div key={f.key} className={ROW} style={{ borderColor: "#F2F2F7" }}>
                     <div className="w-24 text-sm flex-shrink-0" style={{ color: "#3C3C43" }}>{f.label}</div>
-                    <input type={f.type} placeholder={f.placeholder} value={newClient[f.key]}
-                      onChange={e => setNewClient(p => ({ ...p, [f.key]: e.target.value }))}
-                      className="flex-1 text-sm outline-none text-right bg-transparent" style={{ color: "#1C1C1E" }} />
+                    <input type={f.type} placeholder={f.placeholder} value={newClient[f.key]} onChange={e => setNewClient(p => ({ ...p, [f.key]: e.target.value }))} className="flex-1 text-sm outline-none text-right bg-transparent" style={{ color: "#1C1C1E" }} />
                   </div>
                 ))}
-                <div className="flex items-center gap-3 px-4 py-3.5" style={{ borderColor: "#F2F2F7" }}>
+                <div className={ROW} style={{ borderColor: "transparent" }}>
                   <div className="w-24 text-sm flex-shrink-0" style={{ color: "#3C3C43" }}>Parrain</div>
                   <select value={newClient.parrainePar} onChange={e => setNewClient(p => ({ ...p, parrainePar: e.target.value }))} className="flex-1 text-sm outline-none text-right bg-transparent" style={{ color: newClient.parrainePar ? "#1C1C1E" : "#C7C7CC" }}>
                     <option value="">Aucun</option>
@@ -1146,7 +1083,6 @@ useEffect(() => { try { localStorage.setItem('dg_flavors', JSON.stringify(flavor
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t" style={{ background: "rgba(242,242,247,0.92)", backdropFilter: "blur(20px)", borderColor: "#E5E5EA", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}>
         <div className="flex justify-around px-2 pt-2 pb-1">
           {TABS.map(t => (
