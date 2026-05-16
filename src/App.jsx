@@ -209,6 +209,7 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
   const [livraison, setLivraison] = useState(false);
   const [parrId, setParrId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [mapPopup, setMapPopup] = useState(false);
   const pressTimer = useRef(null);
 
   const getC = id => clients.find(c => c.id === id);
@@ -239,7 +240,7 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
     didLongPress.current = false;
     pressTimer.current = setTimeout(() => {
       didLongPress.current = true;
-      if (client.adresse) window.open(`https://waze.com/ul?q=${encodeURIComponent(client.adresse)}`, "_blank");
+      setMapPopup(true);
     }, 600);
   };
   const addrPressEnd = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
@@ -259,6 +260,26 @@ function ClientDetail({ client, clients, stock, flavors, onBack, onAddCommande, 
   return (
     <div className="space-y-5 pb-28" style={{ background: "#F2F2F7", minHeight: "100vh" }}>
       {showDeleteModal && <DeleteClientModal client={client} onCancel={() => setShowDeleteModal(false)} onConfirm={(keep) => { onDelete(client.id, keep); setShowDeleteModal(false); }} />}
+
+      {/* Map popup */}
+      {mapPopup && (
+        <div className="fixed inset-0 z-50 flex items-end" style={{ background: "rgba(0,0,0,0.4)" }} onClick={() => setMapPopup(false)}>
+          <div className="w-full rounded-t-3xl p-5 space-y-3" style={{ background: "white" }} onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full mx-auto" style={{ background: "#E5E5EA" }} />
+            <div className="text-sm font-semibold text-center" style={{ color: "#1C1C1E" }}>Ouvrir avec</div>
+            <div className="text-xs text-center px-4 py-2 rounded-xl" style={{ background: "#F2F2F7", color: "#8E8E93" }}>📍 {client.adresse}</div>
+            <button onClick={() => { window.open(`https://waze.com/ul?q=${encodeURIComponent(client.adresse)}`, "_blank"); setMapPopup(false); }}
+              className="w-full py-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2" style={{ background: "#00BFFF15", color: "#00AAFF", border: "1px solid #00BFFF30" }}>
+              <span>🔵</span> Waze
+            </button>
+            <button onClick={() => { window.open(`https://maps.google.com/?q=${encodeURIComponent(client.adresse)}`, "_blank"); setMapPopup(false); }}
+              className="w-full py-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2" style={{ background: "#34C75915", color: "#34C759", border: "1px solid #34C75930" }}>
+              <span>🟢</span> Google Maps
+            </button>
+            <button onClick={() => setMapPopup(false)} className="w-full py-3.5 rounded-2xl text-sm font-semibold" style={{ background: "#F2F2F7", color: "#8E8E93" }}>Annuler</button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-3 pb-1">
         <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium" style={{ color: "#007AFF" }}><span className="text-lg">‹</span> Clients</button>
@@ -813,46 +834,38 @@ function StatsPage({ clients, flavors }) {
           const fideles = clients.filter(c => c.commandes.length >= 2).length;
           const tauxFid = totalClients > 0 ? parseFloat(((fideles / totalClients) * 100).toFixed(1)) : 0;
           const fidColor = tauxFid >= 60 ? "#34C759" : "#FF3B30";
-          const barW = 12;
-          const gap = Math.max(26, Math.min(48, Math.floor(300 / Math.max(labels.length, 1))));
-          const svgW = labels.length * gap + 8;
-          const chartH = 90;
+          const barH = 16;
+          const rowGap = 8;
           return (
             <div className={P} style={{ paddingBottom: 12 }}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Fidélisation</div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-bold" style={{ color: fidColor }}>{tauxFid}%</span>
                   <span className="text-xs" style={{ color: "#8E8E93" }}>fidèles</span>
                 </div>
               </div>
-
-              <div className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
-                <svg width={Math.max(svgW, 300)} height={chartH + 28} style={{ display: "block" }}>
-                  {labels.map((l, i) => {
-                    const count = counts[l] || 0;
-                    const h = count === 0 ? 0 : Math.max((count / maxCount) * chartH, 6);
-                    const x = i * gap + gap / 2 + 4;
-                    const color = l === 0 ? "#E5E5EA" : l >= 2 ? "#34C759" : "#007AFF";
-                    return (
-                      <g key={l}>
-                        {count > 0 && (
-                          <text x={x} y={chartH - h - 5} textAnchor="middle" fontSize="11" fill="#3C3C43" fontWeight="700">{count}</text>
-                        )}
-                        <rect x={x - barW / 2} y={chartH - h} width={barW} height={Math.max(h, 2)} rx="3" fill={color} />
-                        <text x={x} y={chartH + 13} textAnchor="middle" fontSize="10" fill="#8E8E93">{l}</text>
-                      </g>
-                    );
-                  })}
-                </svg>
+              <div className="space-y-2">
+                {labels.map(l => {
+                  const count = counts[l] || 0;
+                  const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                  const color = l === 0 ? "#C7C7CC" : l >= 2 ? "#34C759" : "#007AFF";
+                  const label = l === 0 ? "0 cmd" : l === 1 ? "1 cmd" : `${l} cmds`;
+                  return (
+                    <div key={l} className="flex items-center gap-2">
+                      <span className="text-xs text-right flex-shrink-0" style={{ color: "#8E8E93", width: 38 }}>{label}</span>
+                      <div className="flex-1 rounded-full overflow-hidden" style={{ background: "#F2F2F7", height: barH }}>
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, count > 0 ? 3 : 0)}%`, background: color }} />
+                      </div>
+                      <span className="text-xs font-bold flex-shrink-0" style={{ color: count > 0 ? "#3C3C43" : "#C7C7CC", width: 16, textAlign: "right" }}>{count}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex gap-3">
-                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#E5E5EA" }}></span>0 cmd</span>
-                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#007AFF" }}></span>1 cmd</span>
-                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#34C759" }}></span>2+ cmd</span>
-                </div>
-                <span className="text-[10px]" style={{ color: "#C7C7CC" }}>← nb de commandes</span>
+              <div className="flex gap-3 pt-2">
+                <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#C7C7CC" }}></span>0 cmd</span>
+                <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#007AFF" }}></span>1 cmd</span>
+                <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#34C759" }}></span>2+ cmds</span>
               </div>
             </div>
           );
