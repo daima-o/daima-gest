@@ -811,45 +811,48 @@ function StatsPage({ clients, flavors }) {
           const labels = Object.keys(counts).map(Number).sort((a, b) => a - b);
           const maxCount = Math.max(...labels.map(l => counts[l]), 1);
           const fideles = clients.filter(c => c.commandes.length >= 2).length;
-          const tauxFid = totalClients > 0 ? Math.round((fideles / totalClients) * 100) : 0;
-          const barW = 14;
-          const gap = Math.max(24, Math.min(44, Math.floor(280 / Math.max(labels.length, 1))));
-          const svgW = labels.length * gap;
-          const chartH = 80;
+          const tauxFid = totalClients > 0 ? parseFloat(((fideles / totalClients) * 100).toFixed(1)) : 0;
+          const fidColor = tauxFid >= 60 ? "#34C759" : "#FF3B30";
+          const barW = 12;
+          const gap = Math.max(26, Math.min(48, Math.floor(300 / Math.max(labels.length, 1))));
+          const svgW = labels.length * gap + 8;
+          const chartH = 90;
           return (
-            <div className={P}>
-              <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Fidélisation</div>
-              <div className="rounded-xl px-4 py-3 flex items-center justify-between" style={{ background: "#F0FDF4" }}>
-                <div>
-                  <div className="text-xs font-bold" style={{ color: "#34C759" }}>Clients fidèles (2+ commandes)</div>
-                  <div className="text-xs mt-0.5" style={{ color: "#8E8E93" }}>{fideles} sur {totalClients} clients</div>
+            <div className={P} style={{ paddingBottom: 12 }}>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#8E8E93" }}>Fidélisation</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold" style={{ color: fidColor }}>{tauxFid}%</span>
+                  <span className="text-xs" style={{ color: "#8E8E93" }}>fidèles</span>
                 </div>
-                <div className="text-3xl font-bold" style={{ color: "#34C759" }}>{tauxFid}%</div>
               </div>
-              <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
-                <svg width={Math.max(svgW, 280)} height={chartH + 30} style={{ display: "block" }}>
+
+              <div className="overflow-x-auto -mx-1 px-1" style={{ WebkitOverflowScrolling: "touch" }}>
+                <svg width={Math.max(svgW, 300)} height={chartH + 28} style={{ display: "block" }}>
                   {labels.map((l, i) => {
                     const count = counts[l] || 0;
-                    const h = count === 0 ? 0 : Math.max((count / maxCount) * chartH, 8);
-                    const x = i * gap + gap / 2;
-                    const color = l === 0 ? "#C7C7CC" : l >= 2 ? "#34C759" : "#007AFF";
+                    const h = count === 0 ? 0 : Math.max((count / maxCount) * chartH, 6);
+                    const x = i * gap + gap / 2 + 4;
+                    const color = l === 0 ? "#E5E5EA" : l >= 2 ? "#34C759" : "#007AFF";
                     return (
                       <g key={l}>
-                        <rect x={x - barW / 2} y={chartH - h} width={barW} height={h} rx="4" fill={color} opacity={0.85} />
                         {count > 0 && (
-                          <text x={x} y={chartH - h - 4} textAnchor="middle" fontSize="10" fill="#3C3C43" fontWeight="600">{count}</text>
+                          <text x={x} y={chartH - h - 5} textAnchor="middle" fontSize="11" fill="#3C3C43" fontWeight="700">{count}</text>
                         )}
-                        <text x={x} y={chartH + 14} textAnchor="middle" fontSize="9" fill="#C7C7CC">{l}</text>
+                        <rect x={x - barW / 2} y={chartH - h} width={barW} height={Math.max(h, 2)} rx="3" fill={color} />
+                        <text x={x} y={chartH + 13} textAnchor="middle" fontSize="10" fill="#8E8E93">{l}</text>
                       </g>
                     );
                   })}
-                  <text x={0} y={chartH + 28} fontSize="8" fill="#C7C7CC">nb de commandes →</text>
                 </svg>
               </div>
-              <div className="flex gap-3 flex-wrap">
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#C7C7CC" }}></span>0</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#007AFF" }}></span>1 commande</span>
-                <span className="text-xs flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#34C759" }}></span>2+ commandes</span>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-3">
+                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#E5E5EA" }}></span>0 cmd</span>
+                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#007AFF" }}></span>1 cmd</span>
+                  <span className="text-[10px] flex items-center gap-1" style={{ color: "#8E8E93" }}><span className="inline-block w-2 h-2 rounded-sm" style={{ background: "#34C759" }}></span>2+ cmd</span>
+                </div>
+                <span className="text-[10px]" style={{ color: "#C7C7CC" }}>← nb de commandes</span>
               </div>
             </div>
           );
